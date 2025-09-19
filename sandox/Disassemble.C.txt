@@ -1,0 +1,23 @@
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.ubuntu.com>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+Dump of assembler code for function main:
+   0x0000000000001149 <+0>:	endbr64
+   0x000000000000114d <+4>:	push   %rbp
+   0x000000000000114e <+5>:	mov    %rsp,%rbp
+   0x0000000000001151 <+8>:	lea    0xeac(%rip),%rax        # 0x2004
+   0x0000000000001158 <+15>:	mov    %rax,%rdi
+   0x000000000000115b <+18>:	call   0x1050 <puts@plt>
+   0x0000000000001160 <+23>:	lea    0xea6(%rip),%rax        # 0x200d
+   0x0000000000001167 <+30>:	mov    %rax,%rdi
+   0x000000000000116a <+33>:	call   0x1050 <puts@plt>
+   0x000000000000116f <+38>:	lea    0xe9e(%rip),%rax        # 0x2014
+   0x0000000000001176 <+45>:	mov    %rax,%rdi
+   0x0000000000001179 <+48>:	call   0x1050 <puts@plt>
+   0x000000000000117e <+53>:	mov    $0x0,%eax
+   0x0000000000001183 <+58>:	pop    %rbp
+   0x0000000000001184 <+59>:	ret
+End of assembler dump.
