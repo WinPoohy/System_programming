@@ -11,7 +11,7 @@ section '.bss' writable
     num dq 0
 
 section '.data'
-    amount dq 10
+    amount dq 50
 
 
 section '.text' executable

@@ -5,7 +5,7 @@ public exit
 public print
 
 section '.bss' writable
-    num dq 568093600
+    num dq 3363522457
     res dq 0
     ten dq 10
     place db 1

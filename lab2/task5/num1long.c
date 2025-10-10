@@ -1,7 +1,7 @@
 # include <stdio.h>
 
 int main() {
-    long long num = 568093600;
+    long long num =3363522457;
     int sum = 0;
 
     while (num > 0) {
