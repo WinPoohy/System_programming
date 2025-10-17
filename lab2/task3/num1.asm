@@ -8,10 +8,10 @@ section '.bss' writable
     num_seven db ('7')
     newline db  (0xA)
     place db 1
-    num dq 0
 
 section '.data'
-    amount dq 50
+    amount dq 45
+    num dq 0
 
 
 section '.text' executable
@@ -28,13 +28,13 @@ section '.text' executable
         mov al, [num_seven]
         call print
         inc rdi
+        inc rsi
         cmp rdi, [num]
         jne .iter2
 
         mov al, [newline]
         call print
 
-        inc rsi
         cmp rsi, [amount]
         jne .iter1
     call exit
