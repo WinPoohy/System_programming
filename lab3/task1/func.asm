@@ -1,48 +1,21 @@
-section .bss
-    ascii_str resb 4
+; .get_length:
+;     cmp byte [rdi+rdx], 0
+;     je .print
+;     inc rdx
+;     jmp .get_length
 
-section .text
-    global _start
 
-_start:
-    pop rax
-    cmp rax, 2
+; .print:
+;     mov rax, 4
+;     mov rbx, 1
+;     mov rcx, code_buffer
+;     int 0x80
 
-    pop rax
-    pop rax
-
-    mov cl, [rax]
-    cmp byte [rax+1], 0
-
-    movzx rax, cl
-
-    mov rdi, ascii_str
-    call int_to_string
-
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, ascii_msg
-    mov rdx, 12
-    syscall
-
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, ascii_str
-    mov rdx, 4
-    syscall
-
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, newline
-    mov rdx, 1
-    syscall
-
-    jmp .exit
-
-.exit:
-    mov rax, 60
-    xor rdi, rdi
-    syscall
+;     mov rax, 4
+;     mov rbx, 1
+;     mov rcx, newline
+;     mov rdx, 1
+;     int 0x80
 
 int_to_string:
     push rbx

@@ -1,6 +1,8 @@
 format elf64
 public _start
 
+include 'func.asm'
+
 section '.data' writeable
     newline db 0xA
 
@@ -21,6 +23,7 @@ _start:
     call int_to_string
 
     mov rdx, 0
+
 .get_length:
     cmp byte [rdi+rdx], 0
     je .print
@@ -39,43 +42,43 @@ _start:
     mov rdx, 1
     int 0x80
 
-int_to_string:
-    push rbx
-    push rcx
-    push rdx
+; int_to_string:
+;     push rbx
+;     push rcx
+;     push rdx
 
-    mov rbx, 10
-    mov rcx, 0
+;     mov rbx, 10
+;     mov rcx, 0
 
-    cmp rax, 0
-    jne .convert
-    mov byte [rdi], '0'
-    mov byte [rdi+1], 0
-    jmp .done
+;     cmp rax, 0
+;     jne .convert
+;     mov byte [rdi], '0'
+;     mov byte [rdi+1], 0
+;     jmp .done
 
-.convert:
-    xor rdx, rdx
-    div rbx
-    add dl, '0'
-    push rdx
-    inc rcx
-    cmp rax, 0
-    jne .convert
+; .convert:
+;     xor rdx, rdx
+;     div rbx
+;     add dl, '0'
+;     push rdx
+;     inc rcx
+;     cmp rax, 0
+;     jne .convert
 
-    mov rbx, 0
-.store:
-    pop rax
-    mov [rdi+rbx], al
-    inc rbx
-    loop .store
+;     mov rbx, 0
+; .store:
+;     pop rax
+;     mov [rdi+rbx], al
+;     inc rbx
+;     loop .store
 
-    mov byte [rdi+rbx], 0
+;     mov byte [rdi+rbx], 0
 
-.done:
-    pop rdx
-    pop rcx
-    pop rbx
-    ret
+; .done:
+;     pop rdx
+;     pop rcx
+;     pop rbx
+;     ret
 
 
 exit:
