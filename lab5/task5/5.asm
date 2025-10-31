@@ -2,12 +2,12 @@ format ELF64
 public _start
 
 section '.bss' writable
-    input_fd    dq 0
-    output_fd   dq 0
-    file_size   dq 0
-    file_data   rq 1
-    k_value     dq 0
-    m_value     dq 0
+    input_fd    dq 0     ; файловый дескриптор входного файла
+    output_fd   dq 0     ; файловый дескриптор выходного файла
+    file_size   dq 0     ; размер файла
+    file_data   rq 1     ; указатель на данные файла в памяти
+    k_value     dq 0     ; начальная позиция k
+    m_value     dq 0     ; значение m (радиус "раскачивания")
 
 section '.data' writable
     usage_msg db 'Usage: program <input_file> <output_file> <k> <m>', 0xA
@@ -18,10 +18,12 @@ section '.data' writable
 section '.text' executable
 
 _start:
-    mov rax, [rsp]
-    cmp rax, 5
-    jge .process_args
+    ; Проверяем количество аргументов командной строки
+    mov rax, [rsp]        ; argc
+    cmp rax, 5            ; должно быть 5 аргументов
+    jge .process_args     ; если достаточно - продолжаем
 
+    ; Выводим сообщение об использовании
     mov rax, 1
     mov rdi, 1
     mov rsi, usage_msg
@@ -30,69 +32,80 @@ _start:
     jmp .exit
 
 .process_args:
-    mov rax, [rsp + 32]
+    ; Преобразуем k из строки в число
+    mov rax, [rsp + 32]   ; argv[3] - значение k
     call str_to_int
     mov [k_value], rax
 
-    mov rax, [rsp + 40]
+    ; Преобразуем m из строки в число
+    mov rax, [rsp + 40]   ; argv[4] - значение m
     call str_to_int
     mov [m_value], rax
 
-    mov rax, 2
-    mov rdi, [rsp + 16]
-    mov rsi, 0
+    ; Открываем входной файл
+    mov rax, 2            ; sys_open
+    mov rdi, [rsp + 16]   ; argv[1] - входной файл
+    mov rsi, 0            ; O_RDONLY
     mov rdx, 0
     syscall
     cmp rax, 0
     jl .error
     mov [input_fd], rax
 
-    mov rax, 8
+    ; Определяем размер файла
+    mov rax, 8            ; sys_lseek
     mov rdi, [input_fd]
-    mov rsi, 0
-    mov rdx, 2
+    mov rsi, 0            ; смещение 0
+    mov rdx, 2            ; SEEK_END (от конца файла)
     syscall
     mov [file_size], rax
 
-    mov rax, 8
+    ; Возвращаемся в начало файла
+    mov rax, 8            ; sys_lseek
     mov rdi, [input_fd]
-    mov rsi, 0
-    mov rdx, 0
+    mov rsi, 0            ; смещение 0
+    mov rdx, 0            ; SEEK_SET (от начала)
     syscall
 
-    mov rax, 9
-    mov rdi, 0
-    mov rsi, [file_size]
-    mov rdx, 1
-    mov r10, 2
-    mov r8, [input_fd]
-    mov r9, 0
+    ; Выделяем память для файла
+    mov rax, 9            ; sys_mmap
+    mov rdi, 0            ; автоматический выбор адреса
+    mov rsi, [file_size]  ; размер
+    mov rdx, 1            ; PROT_READ (только чтение)
+    mov r10, 2            ; MAP_PRIVATE
+    mov r8, [input_fd]    ; файловый дескриптор
+    mov r9, 0             ; смещение
     syscall
     cmp rax, 0
     jl .close_input
     mov [file_data], rax
 
-    mov rax, 3
+    ; Закрываем входной файл (данные уже в памяти)
+    mov rax, 3            ; sys_close
     mov rdi, [input_fd]
     syscall
 
-    mov rax, 2
-    mov rdi, [rsp + 24]
-    mov rsi, 101o
-    mov rdx, 644o
+    ; Открываем выходной файл
+    mov rax, 2            ; sys_open
+    mov rdi, [rsp + 24]   ; argv[2] - выходной файл
+    mov rsi, 101o         ; O_WRONLY|O_CREAT|O_TRUNC
+    mov rdx, 644o         ; права доступа
     syscall
     cmp rax, 0
     jl .unmap_memory
     mov [output_fd], rax
 
+    ; Обрабатываем файл в "раскачивающемся" порядке
     call process_swing_order
 
+    ; Закрываем выходной файл
     mov rax, 3
     mov rdi, [output_fd]
     syscall
 
 .unmap_memory:
-    mov rax, 11
+    ; Освобождаем память
+    mov rax, 11           ; sys_munmap
     mov rdi, [file_data]
     mov rsi, [file_size]
     syscall
@@ -115,115 +128,123 @@ _start:
     xor rdi, rdi
     syscall
 
+; Обработка в "раскачивающемся" порядке
 process_swing_order:
     push rbx
     push r12
     push r13
     push r14
+    push r15
 
-    mov r12, [file_data]
-    mov r13, [file_size]
-    mov r14, [k_value]
-    mov rbx, [m_value]
+    mov r12, [file_data]  ; указатель на данные
+    mov r13, [file_size]  ; размер файла
+    mov r14, [k_value]    ; начальная позиция k
+    mov r15, [m_value]    ; значение m
 
+    ; Проверяем корректность k (должно быть в пределах файла)
     cmp r14, r13
-    jge .done
+    jge .done             ; если k >= размера файла - выходим
 
-    mov rcx, 0
-    mov r8, 0
+    ; Начинаем с позиции k
+    mov rbx, 0            ; счётчик смещения
 
-    mov rax, 1
+    ; Записываем начальный символ (позиция k)
+    mov rax, 1            ; sys_write
     mov rdi, [output_fd]
-    lea rsi, [r12 + r14]
+    mov rsi, r12          ; база данных файла
+    add rsi, r14          ; + позиция k
     mov rdx, 1
     syscall
 
-    mov rcx, 1
+    mov rbx, 1            ; начинаем с первого смещения
 
 .swing_loop:
-    mov rax, r14
-    add rax, rcx
-    cmp rax, r13
-    jge .check_left
+    ; Проверяем достигли ли границ и не превысили ли m
+    cmp rbx, r15
+    jg .done              ; если смещение > m - заканчиваем
 
-    mov rax, r14
-    sub rax, rcx
-    cmp rax, 0
-    jl .check_right
+    ; === ПРАВАЯ ПОЗИЦИЯ (k + смещение) ===
+    mov rax, r14          ; начальная позиция
+    add rax, rbx          ; + смещение
+    cmp rax, r13          ; проверяем правую границу
+    jge .check_left       ; если вышли за правую границу
 
+    ; Записываем символ справа
     mov rax, 1
     mov rdi, [output_fd]
-    lea rsi, [r12 + r14 + rcx]
+    mov rsi, r12          ; база
+    add rsi, r14          ; + k
+    add rsi, rbx          ; + смещение
     mov rdx, 1
     syscall
 
+    ; === ЛЕВАЯ ПОЗИЦИЯ (k - смещение) ===
+    mov rax, r14          ; начальная позиция
+    sub rax, rbx          ; - смещение
+    cmp rax, 0            ; проверяем левую границу
+    jl .next_offset       ; если вышли за левую границу
+
+    ; Записываем символ слева
     mov rax, 1
     mov rdi, [output_fd]
-    lea rsi, [r12 + r14 - rcx]
+    mov rsi, r12          ; база
+    add rsi, r14          ; + k
+    sub rsi, rbx          ; - смещение
     mov rdx, 1
     syscall
 
-    inc rcx
-
-    cmp rcx, rbx
-    jle .swing_loop
-    jmp .done
-
-.check_right:
-    mov rax, r14
-    add rax, rcx
-    cmp rax, r13
-    jge .done
-
-    mov rax, 1
-    mov rdi, [output_fd]
-    lea rsi, [r12 + r14 + rcx]
-    mov rdx, 1
-    syscall
-    inc rcx
-    jmp .check_right
+.next_offset:
+    ; Увеличиваем смещение
+    inc rbx
+    jmp .swing_loop
 
 .check_left:
+    ; Проверяем есть ли символы слева
     mov rax, r14
-    sub rax, rcx
+    sub rax, rbx
     cmp rax, 0
-    jl .done
+    jl .done              ; если и слева нет символов - заканчиваем
 
+    ; Записываем только левый символ
     mov rax, 1
     mov rdi, [output_fd]
-    lea rsi, [r12 + r14 - rcx]
+    mov rsi, r12          ; база
+    add rsi, r14          ; + k
+    sub rsi, rbx          ; - смещение
     mov rdx, 1
     syscall
-    inc rcx
+    inc rbx
     jmp .check_left
 
 .done:
+    pop r15
     pop r14
     pop r13
     pop r12
     pop rbx
     ret
 
+; Функция преобразования строки в число
 str_to_int:
     push rbx
     push rcx
     push rdx
     push rsi
 
-    mov rsi, rax
-    xor rax, rax
-    xor rcx, rcx
+    mov rsi, rax          ; указатель на строку
+    xor rax, rax          ; результат
+    xor rcx, rcx          ; счётчик
 
 .convert_loop:
-    mov cl, [rsi]
-    cmp cl, 0
+    mov cl, [rsi]         ; текущий символ
+    cmp cl, 0             ; конец строки?
     je .done
     cmp cl, '0'
     jl .done
     cmp cl, '9'
     jg .done
 
-    sub cl, '0'
+    sub cl, '0'           ; символ -> цифра
     imul rax, 10
     add rax, rcx
     inc rsi

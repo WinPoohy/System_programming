@@ -33,7 +33,7 @@ itera:
     cmp rdi, 0
     je .skip_count
     inc r9
-    
+
 .skip_count:
     pop rax
     cmp rax, 0
@@ -67,11 +67,11 @@ func:
     cmp rdx, 0
     je .success
 
-    mov rdi, 0
+    mov rdi, 1
     jmp .end
 
 .success:
-    mov rdi, 1
+    mov rdi, 0
 
 .end:
     pop rdx
