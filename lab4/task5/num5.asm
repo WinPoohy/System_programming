@@ -33,6 +33,7 @@ itera:
     cmp rdi, 0
     je .skip_count
     inc r9
+    
 .skip_count:
     pop rax
     cmp rax, 0

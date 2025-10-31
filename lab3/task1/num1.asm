@@ -30,17 +30,17 @@ _start:
     inc rdx
     jmp .get_length
 
-.print:
-    mov rax, 4
-    mov rbx, 1
-    mov rcx, code_buffer
-    int 0x80
+; .print:
+;     mov rax, 4
+;     mov rbx, 1
+;     mov rcx, code_buffer
+;     int 0x80
 
-    mov rax, 4
-    mov rbx, 1
-    mov rcx, newline
-    mov rdx, 1
-    int 0x80
+;     mov rax, 4
+;     mov rbx, 1
+;     mov rcx, newline
+;     mov rdx, 1
+;     int 0x80
 
 ; int_to_string:
 ;     push rbx
