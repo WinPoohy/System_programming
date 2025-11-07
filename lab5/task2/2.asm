@@ -5,7 +5,7 @@ section '.bss' writable
     input_fd    dq 0
     output_fd   dq 0
     buffer      rb 1
-    k_value     dq 0
+    k           dq 0
     counter     dq 0
 
 section '.data' writable
@@ -31,11 +31,11 @@ _start:
 .open_files:
     mov rax, [rsp + 32]
     call str_to_int
-    mov [k_value], rax
+    mov [k], rax
 
-    cmp qword [k_value], 1
+    cmp qword [k], 1
     jge .open_input
-    mov qword [k_value], 1
+    mov qword [k], 1
 
 .open_input:
     mov rax, 2
@@ -76,7 +76,7 @@ _start:
     inc qword [counter]
 
     xor rdx, rdx
-    div qword [k_value]
+    div qword [k]
     cmp rdx, 0
     jne .read_loop
 
