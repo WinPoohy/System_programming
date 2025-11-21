@@ -1,21 +1,25 @@
+# Makefile
 CC = gcc
 ASM = fasm
-CFLAGS = -Wall -Wextra -std=c99 -g
-TARGET = queue_program
-OBJ = main.o queue.o
+CFLAGS = -Wall -Wextra -std=c99
+
+TARGET = program
+SOURCES_C = main.c
+SOURCES_ASM = array.asm
+OBJECTS = main.o array.o
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
+$(TARGET): $(OBJECTS)
+	$(CC) $^ -o $@
 
-main.o: main.c queue.h
-	$(CC) $(CFLAGS) -c main.c
+main.o: main.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-queue.o: queue.asm
-	$(ASM) queue.asm queue.o
+array.o: array.asm
+	$(ASM) $<
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJECTS) $(TARGET)
 
 .PHONY: all clean

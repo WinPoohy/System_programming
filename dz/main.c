@@ -1,16 +1,16 @@
 // main.c
 #include <stdio.h>
 #include <stdlib.h>
-#include "queue.h"
+#include "array.h"
 
 void flush_stdout() {
     fflush(stdout);
 }
 
 int main() {
-    Queue* queue = create_queue();
-    if (!queue) {
-        printf("Ошибка: Не удалось создать очередь\n");
+    Array* array = create_array();
+    if (!array) {
+        printf("Ошибка: Не удалось создать массив\n");
         return 1;
     }
 
@@ -18,44 +18,42 @@ int main() {
     printf("Введите количество случайных элементов для генерации: ");
     scanf("%lu", &n);
 
-    printf("\n1. Заполнение очереди %lu случайными числами\n", n);
+    printf("\n1. Заполнение массива %lu случайными числами\n", n);
     flush_stdout();
-    fill_random(queue, n);
-    printf("Очередь: ");
+    fill_random(array, n);
+    printf("Массив: ");
     flush_stdout();
-    print_queue(queue);
+    print_array(array);
 
-    printf("Всего элементов: %lu\n", queue->size);
-    printf("Четных чисел: %u\n", count_even_numbers(queue));
-    printf("Простых чисел: %u\n", count_primes(queue));
+    printf("Всего элементов: %lu\n", array->size);
+    printf("Чисел, оканчивающихся на 1: %u\n", count_ends_with_one(array));
     flush_stdout();
 
     printf("\n2. Добавление числа 999 в конец\n");
     flush_stdout();
-    enqueue(queue, 999);
-    printf("Очередь после добавления: ");
+    add_to_end(array, 999);
+    printf("Массив после добавления: ");
     flush_stdout();
-    print_queue(queue);
+    print_array(array);
 
-    printf("\n3. Удаление из начала: %lu\n", dequeue(queue));
+    printf("\n3. Удаление из начала: %lu\n", remove_from_start(array));
     flush_stdout();
-    printf("Очередь после удаления: ");
+    printf("Массив после удаления: ");
     flush_stdout();
-    print_queue(queue);
+    print_array(array);
 
     printf("\n4. Удаление четных чисел\n");
     flush_stdout();
-    remove_even_numbers(queue);
-    printf("Очередь после удаления четных чисел: ");
+    remove_even_numbers(array);
+    printf("Массив после удаления четных чисел: ");
     flush_stdout();
-    print_queue(queue);
-    printf("Всего элементов: %lu\n", queue->size);
-    printf("Четных чисел: %u\n", count_even_numbers(queue));
-    printf("Простых чисел: %u\n", count_primes(queue));
+    print_array(array);
+    printf("Всего элементов: %lu\n", array->size);
+    printf("Чисел, оканчивающихся на 1: %u\n", count_ends_with_one(array));
     flush_stdout();
 
     flush_stdout();
-    free_queue(queue);
+    free_array(array);
 
     return 0;
 }
