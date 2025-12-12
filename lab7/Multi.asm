@@ -23,7 +23,7 @@ ARRAY_SIZE  = 4 + (COUNT * 4)
 section '.data' writeable
     msg_start       db "Массив заполнен случайными числами.", 10, 0
     msg_start_len   = $ - msg_start
-    
+
     msg_task0:
         db "[Процесс 1] Самая редкая цифра: ", 0
     msg_task0_end:
@@ -43,15 +43,15 @@ section '.data' writeable
     db "[Процесс 4] Третье число после максимального: ", 0
     msg_task3_end:
     len_3 equ msg_task3_end - msg_task3
-    
+
     newline         db 10, 0
-    
+
     array_ptr       dq 0
     data_ptr        dq 0
     seed            dd 743
-    
+
     num_buffer      rb 20
-    
+
     timespec:
         dq 0
         dq 1000000  ; 1 ms
@@ -71,7 +71,7 @@ _start:
     cmp rax, 0
     jl exit_error
     mov [array_ptr], rax
-    
+
     mov dword [rax], 0      ; Обнуляем очередь
     lea rbx, [rax + 4]
     mov [data_ptr], rbx     ; Указатель на данные
@@ -121,10 +121,10 @@ _start:
 
     ; --- ЗАДАЧА 0 ---
     task_rare_digit:
-        sub rsp, 80             ; ВЫДЕЛЯЕМ ПАМЯТЬ ЗДЕСЬ
+        sub rsp, 80
         mov rdi, rsp            ; Передаем адрес буфера в функцию
-        call count_digits       
-        
+        call count_digits
+
         mov rcx, 0
         mov rbx, -1
         shr rbx, 1              ; Max Int
@@ -143,9 +143,9 @@ _start:
     .print:
         mov r14, rdx
         add rsp, 80             ; ОСВОБОЖДАЕМ ПАМЯТЬ
-        
+
         call wait_my_turn
-        
+
         mov rax, SYS_WRITE
         mov rdi, STDOUT
         lea rsi, [msg_task0]
@@ -154,7 +154,7 @@ _start:
         mov rax, r14
         call print_num
         call print_newline
-        
+
         call pass_turn
         jmp child_exit
 
@@ -163,7 +163,7 @@ _start:
         sub rsp, 80             ; ВЫДЕЛЯЕМ ПАМЯТЬ ЗДЕСЬ
         mov rdi, rsp
         call count_digits
-        
+
         mov rcx, 0
         mov rbx, 0
         mov rdx, -1
@@ -181,9 +181,9 @@ _start:
     .print:
         mov r14, rdx
         add rsp, 80             ; ОСВОБОЖДАЕМ
-        
+
         call wait_my_turn
-        
+
         mov rax, SYS_WRITE
         mov rdi, STDOUT
         lea rsi, [msg_task2]
@@ -192,7 +192,7 @@ _start:
         mov rax, r14
         call print_num
         call print_newline
-        
+
         call pass_turn
         jmp child_exit
 
@@ -207,12 +207,12 @@ _start:
         add rbx, rax
         add rsi, 4
         loop .sum
-        
+
         mov rax, rbx
         xor rdx, rdx
         mov rbx, COUNT
         div rbx
-        
+
         mov rcx, rbx
         shr rcx, 1
         cmp rdx, rcx
@@ -220,7 +220,7 @@ _start:
         inc rax
     .done:
         mov r14, rax
-        
+
         call wait_my_turn
         mov rax, SYS_WRITE
         mov rdi, STDOUT
@@ -266,9 +266,9 @@ _start:
     .nx:
         add rsi, 4
         loop .scan
-        
+
         mov r14, r10
-        
+
         call wait_my_turn
         mov rax, SYS_WRITE
         mov rdi, STDOUT
@@ -296,11 +296,11 @@ _start:
         mov rdx, 0
         mov r10, 0
         syscall
-        
+
         ; Проверяем результат wait4
         cmp rax, 0
         jg .wl              ; Если RAX > 0 (вернул PID убитого ребенка), ждем следующего
-        
+
         ; Если RAX <= 0 (ошибка, например -ECHILD "No child processes"), значит все дети мертвы
 
         ; Освобождаем память
@@ -376,7 +376,7 @@ count_digits:
     xor rax, rax
     rep stosq               ; Обнуляем буфер
     pop rbx                 ; RBX = Начало буфера
-    
+
     mov rsi, [data_ptr]
     mov rcx, COUNT
 .ol:
