@@ -46,12 +46,12 @@ section '.bss' writable
     ; Состояние движения
     dir         dq 0        ; 0:Влево, 1:Вниз, 2:Вправо, 3:Вверх
 
-    delay       dq 60000
+    delay       dq 10000
     speed_level dq 3
     color_idx   dq 1        ; Текущий индекс цвета (1-6)
 
 section '.data' writable
-    cursor_char db '*'      ; Символ следа
+    cursor_char db ' '      ; Символ следа
     usage_msg   db 'Spiral Control: W - Faster, S - Slower, Q - Quit', 0
 
 section '.text' executable
@@ -71,27 +71,27 @@ _start:
 
     mov rdi, 2
     mov rsi, 2
-    mov rdx, 0
+    mov rdx, 1
     call init_pair
 
     mov rdi, 3
     mov rsi, 3
-    mov rdx, 0
+    mov rdx, 2
     call init_pair
 
     mov rdi, 4
     mov rsi, 4
-    mov rdx, 0
+    mov rdx, 3
     call init_pair
 
     mov rdi, 5
     mov rsi, 5
-    mov rdx, 0
+    mov rdx, 4
     call init_pair
 
     mov rdi, 6
     mov rsi, 6
-    mov rdx, 0
+    mov rdx, 5
     call init_pair
 
     ; Настройка режима терминала
@@ -167,10 +167,10 @@ _start:
     dec qword [speed_level]
 
 .recalc_delay:
-    ; Простая формула задержки: (11 - speed) * 10000
+    ; Простая формула задержки: (11 - speed) * 1000
     mov rax, 11
     sub rax, [speed_level]
-    imul rax, 10000
+    imul rax, 1000
     mov [delay], rax
 
 .update_position:

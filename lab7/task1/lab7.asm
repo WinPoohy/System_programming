@@ -4,45 +4,45 @@ public _start
 section '.data' writeable
     prompt db "Введите команду (например, ./lab5): ", 0
     prompt_len = $ - prompt
-    
+
     error_msg db "Ошибка: не удалось запустить программу", 10, 0
     error_len = $ - error_msg
-    
+
     input_buffer rb 256
-    
+
     ; argv[0] - имя файла, argv[1] - NULL
-    argv dq 0, 0 
-    
+    argv dq 0, 0
+
     ; Сюда сохраним настоящий указатель на окружение
     envp_addr dq 0
-    
+
     status dd 0
 
 section '.text' executable
 _start:
     ; Получаем указатель на переменные окружения со стека.
     ; Структура стека при старте: [argc] [argv0] ... [argvN] [NULL] [envp0] ...
-    
+
     pop rcx                 ; RCX = argc. Теперь RSP указывает на argv[0]
-    
+
     ; Нам нужно перепрыгнуть через весь массив argv, чтобы найти envp.
     ; Размер argv = (argc * 8) байт + 8 байт (завершающий NULL).
     ; Адрес envp = RSP + (RCX * 8) + 8
-    
-    lea rdi, [rsp + rcx*8 + 8] 
+
+    lea rdi, [rsp + rcx*8 + 8]
     mov [envp_addr], rdi    ; Сохраняем найденный адрес массива окружения
 
 main_loop:
     ; Вывод приглашения
-    mov rax, 1              ; sys_write
-    mov rdi, 1              ; stdout
+    mov rax, 1
+    mov rdi, 1
     lea rsi, [prompt]
     mov rdx, prompt_len
     syscall
 
     ; Чтение ввода
-    mov rax, 0              ; sys_read
-    mov rdi, 0              ; stdin
+    mov rax, 0
+    mov rdi, 0
     lea rsi, [input_buffer]
     mov rdx, 255
     syscall
@@ -59,9 +59,9 @@ main_loop:
     syscall
 
     test rax, rax
-    js fork_error       ; если rax < 0
-    jz child_process    ; если rax == 0
-    
+    js fork_error       ; если rax < 0 - родитель
+    jz child_process    ; если rax == 0 - ребенок
+
     ; Родитель
     jmp parent_process
 
@@ -69,7 +69,7 @@ child_process:
     ; Подготовка аргументов
     lea rbx, [input_buffer]
     mov [argv], rbx         ; argv[0] = имя файла
-    
+
     mov rax, 59             ; sys_execve
     lea rdi, [input_buffer] ; filename
     lea rsi, [argv]         ; argv
@@ -84,7 +84,7 @@ child_process:
     lea rsi, [error_msg]
     mov rdx, error_len
     syscall
-    
+
     mov rax, 60             ; sys_exit
     mov rdi, 1
     syscall
