@@ -18,7 +18,7 @@ MAP_SHARED  = 0x01
 MAP_ANONY   = 0x20
 
 ; Вариант 669
-COUNT       = 669
+COUNT       = 5
 ARRAY_SIZE  = 4 + (COUNT * 4)
 
 section '.data' writeable
@@ -46,7 +46,7 @@ section '.data' writeable
 
     array_ptr       dq 0
     data_ptr        dq 0
-    seed            dd 743
+    seed            dd 777
 
     num_buffer      rb 20
 
@@ -217,7 +217,7 @@ _start:
         mov rcx, COUNT
         call bubble_sort
 
-        mov eax, [rsp + 501*4]
+        mov eax, [rsp + 3*4]
         mov r14, rax
         add rsp, 2700
 

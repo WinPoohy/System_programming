@@ -2,104 +2,127 @@ format ELF64
 public _start
 
 section '.data' writeable
-    prompt db "Введите команду (например, ./lab5): ", 0
+    prompt db "Введите команду (например, /bin/ls или ./lab5): ", 0
     prompt_len = $ - prompt
 
-    error_msg db "Ошибка: не удалось запустить программу", 10, 0
+    error_msg db "Ошибка: не удалось найти или запустить программу", 10, 0
     error_len = $ - error_msg
 
     input_buffer rb 256
 
-    ; argv[0] - имя файла, argv[1] - NULL
+    ; Массив аргументов: argv[0] - указатель на строку, argv[1] - NULL
+    align 8
     argv dq 0, 0
 
-    ; Сюда сохраним настоящий указатель на окружение
     envp_addr dq 0
-
     status dd 0
 
 section '.text' executable
 _start:
-    ; Получаем указатель на переменные окружения со стека.
-    ; Структура стека при старте: [argc] [argv0] ... [argvN] [NULL] [envp0] ...
-
-    pop rcx                 ; RCX = argc. Теперь RSP указывает на argv[0]
-
-    ; Нам нужно перепрыгнуть через весь массив argv, чтобы найти envp.
-    ; Размер argv = (argc * 8) байт + 8 байт (завершающий NULL).
-    ; Адрес envp = RSP + (RCX * 8) + 8
-
-    lea rdi, [rsp + rcx*8 + 8]
-    mov [envp_addr], rdi    ; Сохраняем найденный адрес массива окружения
+    ; 1. Извлечение envp из стека
+    pop rcx                 ; rcx = argc
+    lea rsi, [rsp + rcx*8 + 8]
+    mov [envp_addr], rsi    ; Сохраняем адрес начала массива envp
 
 main_loop:
-    ; Вывод приглашения
-    mov rax, 1
+    ; 2. Вывод приглашения
+    mov rax, 1              ; sys_write
     mov rdi, 1
     lea rsi, [prompt]
     mov rdx, prompt_len
     syscall
 
-    ; Чтение ввода
-    mov rax, 0
+    ; 3. Чтение ввода
+    mov rax, 0              ; sys_read
     mov rdi, 0
     lea rsi, [input_buffer]
     mov rdx, 255
     syscall
 
-    ; Если нажали только Enter (1 байт), повторить
+    ; Если ошибка чтения или пустой ввод
     cmp rax, 1
     jle main_loop
 
-    ; Замена \n на 0
-    mov byte [input_buffer + rax - 1], 0
+    ; 4. Корректная замена символа новой строки на 0
+    ; Проходим по строке и заменяем \n или \r на 0
+    mov rcx, rax
+    lea rdi, [input_buffer]
+    mov al, 10              ; '\n'
+    repne scasb
+    jne .no_newline
+    mov byte [rdi-1], 0
+.no_newline:
 
-    ; Fork
+    ; 5. Создание процесса (fork)
     mov rax, 57             ; sys_fork
     syscall
 
     test rax, rax
-    js fork_error       ; если rax < 0 - родитель
-    jz child_process    ; если rax == 0 - ребенок
+    js main_loop            ; Ошибка fork - возвращаемся
+    jz child_process        ; Потомок
 
-    ; Родитель
-    jmp parent_process
+parent_process:
+    ; 6. Ожидание завершения потомка
+    mov rdi, rax            ; PID потомка
+    mov rax, 61             ; sys_wait4
+    lea rsi, [status]
+    xor rdx, rdx
+    xor r10, r10
+    syscall
+    jmp main_loop
 
 child_process:
-    ; Подготовка аргументов
-    lea rbx, [input_buffer]
-    mov [argv], rbx         ; argv[0] = имя файла
+    ; --- ПАРСИНГ АРГУМЕНТОВ ---
+    lea rsi, [input_buffer] ; Начало строки
+    lea rdi, [argv]         ; Куда пишем указатели на аргументы
+    xor rcx, rcx            ; Счетчик аргументов
 
+.parse_loop:
+    ; Пропускаем ведущие пробелы
+.skip_spaces:
+    cmp byte [rsi], ' '
+    jne .found_arg
+    inc rsi
+    jmp .skip_spaces
+
+.found_arg:
+    cmp byte [rsi], 0       ; Конец строки?
+    je .done_parsing
+
+    mov [rdi + rcx*8], rsi  ; Сохраняем указатель на начало аргумента в argv
+    inc rcx
+
+    ; Ищем конец текущего аргумента (пробел или ноль)
+.find_end:
+    cmp byte [rsi], ' '
+    je .terminate_arg
+    cmp byte [rsi], 0
+    je .done_parsing
+    inc rsi
+    jmp .find_end
+
+.terminate_arg:
+    mov byte [rsi], 0       ; Ставим нуль-терминатор в конце аргумента
+    inc rsi
+    jmp .parse_loop
+
+.done_parsing:
+    mov qword [rdi + rcx*8], 0 ; Последний элемент argv должен быть NULL
+
+    ; --- ЗАПУСК ---
     mov rax, 59             ; sys_execve
-    lea rdi, [input_buffer] ; filename
-    lea rsi, [argv]         ; argv
-
-    ; Мы берем значение, которое сохранили в envp_addr
-    mov rdx, [envp_addr]    ; envp (передаем системное окружение: TERM, PATH и т.д.)
+    mov rdi, [argv]         ; Путь к файлу (первый аргумент)
+    lea rsi, [argv]         ; Весь массив аргументов
+    mov rdx, [envp_addr]    ; Окружение
     syscall
 
-    ; Обработка ошибки execve
+    ; Если мы здесь, значит execve не сработал
     mov rax, 1
     mov rdi, 1
     lea rsi, [error_msg]
     mov rdx, error_len
     syscall
 
-    mov rax, 60             ; sys_exit
-    mov rdi, 1
+    mov rax, 60
+    xor rdi, rdi
     syscall
-
-parent_process:
-    ; Ожидание
-    mov rdi, rax            ; PID
-    mov rax, 61             ; sys_wait4
-    lea rsi, [status]
-    mov rdx, 0
-    mov r10, 0
-    syscall
-
-    ; Возвращаемся в начало цикла, А НЕ в _start
-    jmp main_loop
-
-fork_error:
-    jmp main_loop           ; При ошибке fork тоже лучше вернуться в цикл
