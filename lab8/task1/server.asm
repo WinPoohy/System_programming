@@ -1,18 +1,18 @@
 format ELF64
 public _start
 
-SYS_WRITE       = 1
-SYS_CLOSE       = 3
-SYS_SOCKET      = 41
-SYS_ACCEPT      = 43
-SYS_BIND        = 49
-SYS_LISTEN      = 50
-SYS_EXIT        = 60
+SYS_WRITE       = 1     ; ID системного вызова для записи (вывод в консоль/сокет)
+SYS_CLOSE       = 3     ; ID для закрытия файла/сокета
+SYS_SOCKET      = 41    ; ID для создания сокета
+SYS_ACCEPT      = 43    ; ID для приема входящего соединения
+SYS_BIND        = 49    ; ID для привязки к порту
+SYS_LISTEN      = 50    ; ID для начала прослушивания
+SYS_EXIT        = 60    ; ID для выхода из программы
 
-AF_INET         = 2
-SOCK_STREAM     = 1
-INADDR_ANY      = 0
-PORT            = 7777
+AF_INET         = 2     ; IPv4
+SOCK_STREAM     = 1     ; TCP
+INADDR_ANY      = 0     ; Слушать на всех интерфейсах (0.0.0.0)
+PORT            = 7777  ; Это просто порт
 
 section '.data' writeable
     msg_start       db '[Server] TIC-TAC-TOE ready on 7777...', 10, 0
@@ -24,23 +24,22 @@ section '.data' writeable
 
     serv_addr:
         dw AF_INET
-        db 0x1E, 0x61       ; Port 7777
+        db 0x1E, 0x61       ; Port 7777 так как оно же в HEX = 0x1E61
         dd INADDR_ANY
         dq 0
 
     sockfd          dq 0
     clientfd        dq 0
 
-    ; Игровое состояние
     ; Доска 9 байт. Изначально '1'..'9'.
     ; Игрок = 'O', Сервер = 'X'
     board           db '1','2','3','4','5','6','7','8','9'
     moves_count     dq 0
-    seed            dq 987654321
+    seed            dq 123456789
 
 section '.text' executable
 _start:
-    ; Сетевая инициализация (как в Blackjack)
+    ; Сетевая инициализация
     mov rax, SYS_SOCKET
     mov rdi, AF_INET
     mov rsi, SOCK_STREAM
@@ -86,7 +85,7 @@ game_loop:
     syscall
 
     cmp rax, 0
-    jle close_client
+    jle close_client ; клиетну пришла ж...
 
     mov al, byte [recv_buf]
 
@@ -140,7 +139,7 @@ game_loop:
     call send_board
     jmp game_loop
 
-; --- ЗАВЕРШЕНИЕ РАУНДА ---
+; Конец игры
 player_wins:
     mov rdi, send_buf
     call draw_board_to_buf

@@ -14,8 +14,8 @@ section '.data' writeable
     msg_conn        db 'Connecting to Tic-Tac-Toe Server...', 10, 0
 
     serv_addr:
-        dw AF_INET
-        db 0x1E, 0x61       ; Port 7777 (network order)
+        dw AF_INET          ; IPv4
+        db 0x1E, 0x61       ; Port 7777
         db 127,0,0,1        ; IP 127.0.0.1
         dq 0
 
