@@ -1,25 +1,16 @@
 # Makefile
 CC = gcc
 ASM = fasm
-CFLAGS = -Wall -Wextra -std=c99
-
+CFLAGS = -no-pie -g
 TARGET = program
-SOURCES_C = main.c
-SOURCES_ASM = array.asm
-OBJECTS = main.o array.o
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $^ -o $@
-
-main.o: main.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(TARGET): main.c array.o
+	$(CC) $(CFLAGS) main.c array.o -o $(TARGET)
 
 array.o: array.asm
-	$(ASM) $<
+	$(ASM) array.asm
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
-
-.PHONY: all clean
+	rm -f *.o $(TARGET)

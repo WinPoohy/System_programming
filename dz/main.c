@@ -8,52 +8,47 @@ void flush_stdout() {
 }
 
 int main() {
+    printf("=== Демонстрация работы с массивом (FASM + mmap) ===\n");
+
     Array* array = create_array();
     if (!array) {
-        printf("Ошибка: Не удалось создать массив\n");
+        printf("Ошибка: Не удалось выделить память (mmap failed)\n");
         return 1;
     }
 
     unsigned long n;
-    printf("Введите количество случайных элементов для генерации: ");
-    scanf("%lu", &n);
+    printf("Введите количество элементов для генерации: ");
+    if (scanf("%lu", &n) != 1) n = 5; // Дефолтное значение при ошибке ввода
 
-    printf("\n1. Заполнение массива %lu случайными числами\n", n);
-    flush_stdout();
+    printf("\n1. Заполнение случайными числами (%lu шт.)\n", n);
     fill_random(array, n);
-    printf("Массив: ");
-    flush_stdout();
+    printf("Массив: "); flush_stdout();
     print_array(array);
 
     printf("Всего элементов: %lu\n", array->size);
     printf("Чисел, оканчивающихся на 1: %u\n", count_ends_with_one(array));
-    flush_stdout();
 
-    printf("\n2. Добавление числа 999 в конец\n");
-    flush_stdout();
-    add_to_end(array, 999);
-    printf("Массив после добавления: ");
-    flush_stdout();
+    printf("\n2. Добавление числа 101 (для проверки окончания на 1)\n");
+    add_to_end(array, 101);
+    add_to_end(array, 42);
+    printf("Массив: "); flush_stdout();
     print_array(array);
+    printf("Чисел, оканчивающихся на 1: %u\n", count_ends_with_one(array));
 
-    printf("\n3. Удаление из начала: %lu\n", remove_from_start(array));
-    flush_stdout();
-    printf("Массив после удаления: ");
-    flush_stdout();
+    printf("\n3. Удаление из начала\n");
+    unsigned long val = remove_from_start(array);
+    printf("Удалено: %lu\n", val);
+    printf("Массив: "); flush_stdout();
     print_array(array);
 
     printf("\n4. Удаление четных чисел\n");
-    flush_stdout();
     remove_even_numbers(array);
-    printf("Массив после удаления четных чисел: ");
-    flush_stdout();
+    printf("Массив (остались только нечетные): "); flush_stdout();
     print_array(array);
-    printf("Всего элементов: %lu\n", array->size);
-    printf("Чисел, оканчивающихся на 1: %u\n", count_ends_with_one(array));
-    flush_stdout();
 
-    flush_stdout();
+    printf("\nОсвобождение памяти...\n");
     free_array(array);
+    printf("Готово.\n");
 
     return 0;
 }
