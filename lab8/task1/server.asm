@@ -111,7 +111,7 @@ game_loop:
     cmp byte [rcx], 'O'
     je game_loop
 
-    ; --- ХОД ИГРОКА ---
+    ; Мы ходим
     mov byte [rcx], 'O' ; Ставим нолик
     inc qword [moves_count]
 
@@ -124,7 +124,7 @@ game_loop:
     cmp qword [moves_count], 9
     jge draw_game
 
-    ; --- ХОД СЕРВЕРА (AI) ---
+    ; Тут сервак ходит
     call make_server_move
 
     ; Проверка победы сервера
@@ -182,9 +182,7 @@ close_client:
     syscall
     jmp accept_loop
 
-; =========================================
-; ЛОГИКА ИГРЫ
-; =========================================
+; Логика игры
 
 reset_board:
     mov rcx, 9
@@ -306,9 +304,7 @@ check_line:
     xor rax, rax
     ret
 
-; =========================================
-; ГРАФИКА (ASCII)
-; =========================================
+; Графика (ASCII)
 
 send_board:
     mov rdi, send_buf
@@ -423,9 +419,7 @@ strcat:
     pop rsi
     ret
 
-; =========================================
-; УТИЛИТЫ
-; =========================================
+; Утилиты
 rand:
     push rbx
     push rcx
